@@ -7,3 +7,4 @@ openpyxl
 fastapi_mail
 passlib[argon2]
 argon2-cffi
+python-dotenv
