@@ -12,6 +12,10 @@ DATABASE_URL = os.getenv(
     "mysql+pymysql://root:root@localhost/hr_db"
 )
 
+# ensure the URL uses pymysql driver
+if DATABASE_URL.startswith("mysql://") and "+pymysql" not in DATABASE_URL:
+    DATABASE_URL = DATABASE_URL.replace("mysql://", "mysql+pymysql://")
+
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
