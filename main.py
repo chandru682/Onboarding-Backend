@@ -21,6 +21,10 @@ from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
 from openpyxl.drawing.image import Image
 from openpyxl.utils import get_column_letter
 from passlib.context import CryptContext
+from dotenv import load_dotenv
+
+load_dotenv()
+
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 # =====================================================
@@ -29,9 +33,15 @@ pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 app = FastAPI()
 
+# Configure CORS with environment support
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:3000"
+).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,                                              
     allow_methods=["*"],
     allow_headers=["*"],
