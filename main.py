@@ -5,6 +5,7 @@ import json
 from datetime import datetime , timedelta
 from fastapi import Body
 import random
+import httpx
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 from fastapi import FastAPI, File, UploadFile, Form, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -795,15 +796,27 @@ async def send_otp(data: dict = Body(...), db: Session = Depends(get_db)):
 
     print("OTP:", otp)
 
-    message = MessageSchema(
-        subject="OTP Verification",
-        recipients=[email],
-        body=f"Your OTP is {otp}",
-        subtype="plain"
-    )
-
-    fm = FastMail(conf)
-    await fm.send_message(message)
+    # send via Resend HTTP API
+    api_key = os.getenv("RESEND_API_KEY")
+    if api_key:
+        async with httpx.AsyncClient() as client:
+            try:
+                await client.post(
+                    "https://api.resend.com/emails",
+                    json={
+                        "from": os.getenv("MAIL_FROM"),
+                        "to": [email],
+                        "subject": "OTP Verification",
+                        "text": f"Your OTP is {otp}",
+                    },
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    timeout=10,
+                )
+            except Exception as exc:
+                # log but don't fail entire request
+                print("Resend send error", exc)
+    else:
+        print("RESEND_API_KEY not set; skipping email send")
 
     return {"success": True}
 
