@@ -37,7 +37,7 @@ app = FastAPI()
 # Configure CORS with environment support
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
-    "http://localhost:3000"
+    "https://workforz.com"
 ).split(",")
 
 app.add_middleware(
