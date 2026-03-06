@@ -847,38 +847,44 @@ async def options_employee_login():
 
 @app.post("/employee-login")
 def employee_login(data: dict = Body(...), db: Session = Depends(get_db)):
+    try:
+        email = data.get("email")
+        password = data.get("password")
 
-    email = data.get("email")
-    password = data.get("password")
+        if not email or not password:
+            return {"success": False, "message": "Email and password are required"}
 
-    auth = db.query(models.EmployeeAuth).filter(
-        models.EmployeeAuth.email == email
-    ).first()
+        auth = db.query(models.EmployeeAuth).filter(
+            models.EmployeeAuth.email == email
+        ).first()
 
-    if not auth:
-        return {"success": False, "message": "Invalid email or password"}
+        if not auth:
+            return {"success": False, "message": "Invalid email or password"}
 
-    if not auth.password:
-        return {"success": False, "message": "Password not set"}
+        if not auth.password:
+            return {"success": False, "message": "Password not set"}
 
-    if not pwd_context.verify(password, auth.password):
-        return {"success": False, "message": "Invalid email or password"}
+        if not pwd_context.verify(password, auth.password):
+            return {"success": False, "message": "Invalid email or password"}
 
-    employee = db.query(models.EmployeeJoining).filter(
-        models.EmployeeJoining.id == auth.employee_id
-    ).first()
+        employee = db.query(models.EmployeeJoining).filter(
+            models.EmployeeJoining.id == auth.employee_id
+        ).first()
 
-    if not employee:
-        return {"success": False, "message": "Employee record not found"}
+        if not employee:
+            return {"success": False, "message": "Employee record not found"}
 
-    return {
-        "success": True,
-        "employee": {
-            "id": employee.id,
-            "name": employee.name,
-            "email": employee.email
+        return {
+            "success": True,
+            "employee": {
+                "id": employee.id,
+                "name": employee.name,
+                "email": employee.email
+            }
         }
-    } 
+    except Exception as e:
+        print(f"Login error: {str(e)}")
+        return {"success": False, "message": f"Server error: {str(e)}"} 
 @app.delete("/delete-employee/{employee_id}")
 def delete_employee(employee_id: int, db: Session = Depends(get_db)):
 
