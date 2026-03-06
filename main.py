@@ -50,6 +50,7 @@ allow_credentials = ALLOWED_ORIGINS != ["*"]
 print("CORS allowed origins:", ALLOWED_ORIGINS)
 print("CORS allow credentials:", allow_credentials)
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
