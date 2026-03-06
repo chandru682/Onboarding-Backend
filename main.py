@@ -92,17 +92,39 @@ def get_db():
 # FILE SAVE FUNCTION
 # =====================================================
 
-def save_file(file: UploadFile):
+async def save_file(file: UploadFile):
     if not file:
         return None
 
-    unique_name = f"{uuid4()}_{file.filename}"
-    file_path = os.path.join(UPLOAD_FOLDER, unique_name)
+    # Read file content
+    file_content = await file.read()
 
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    # Prepare the file for upload
+    files = {"file": (file.filename, file_content, file.content_type)}
 
-    return unique_name
+    # Storage API credentials
+    headers = {
+        "X-Access-Key": "tid_lwdftdjhgKNwWeJhougCvnBadEFcbHLRTVmrVmTKRpHEtBLLJF",
+        "X-Secret-Key": "tsec_6Bxq+M675c7pEl83nz1CQDKtzXQNg0Xp28lTG+CvBo_KZ9xtDUY161otJINiAx1Xd9WUcn",
+        "X-Bucket-Name": "bundled-envelope-i8ihmsjw"
+    }
+
+    try:
+        # Upload to storage API
+        async with httpx.AsyncClient() as client:
+            response = await client.post("https://t3.storageapi.dev", files=files, headers=headers)
+
+        if response.status_code == 200:
+            # Assume the API returns JSON with file URL
+            data = response.json()
+            file_url = data.get("url") or data.get("file_url") or data.get("key")
+            return file_url
+        else:
+            print(f"Upload failed: {response.status_code} - {response.text}")
+            return None
+    except Exception as e:
+        print(f"Upload error: {e}")
+        return None
 
 # =====================================================
 # EMPLOYEE SUBMISSION
@@ -202,15 +224,15 @@ async def employee_joining(
     dependent_pan_0: UploadFile = File(None),
     dependent_photo_0: UploadFile = File(None),
     # Save Files
-    resume_file = save_file(resume)
-    sslc_file = save_file(sslc)
-    hsc_file = save_file(hsc)
-    aadhar_self_file = save_file(aadharSelf)
-    photo_file = save_file(photo)
-    aadhar_father_file = save_file(aadharFather)
-    aadhar_mother_file = save_file(aadharMother)
-    pan_self_file = save_file(panSelf)
-    bank_passbook_file = save_file(bankPassbookPhoto)
+    resume_file = await save_file(resume)
+    sslc_file = await save_file(sslc)
+    hsc_file = await save_file(hsc)
+    aadhar_self_file = await save_file(aadharSelf)
+    photo_file = await save_file(photo)
+    aadhar_father_file = await save_file(aadharFather)
+    aadhar_mother_file = await save_file(aadharMother)
+    pan_self_file = await save_file(panSelf)
+    bank_passbook_file = await save_file(bankPassbookPhoto)
 
     employee = models.EmployeeJoining(
         employee_code=employeeCode,
@@ -311,7 +333,7 @@ async def employee_joining(
             file_field = locals().get(f"dependent_{file_type}_{index}")
 
             if file_field:
-                file_name = save_file(file_field)
+                file_name = await save_file(file_field)
 
                 if file_type == "aadhar":
                     new_dependent.aadhar_photo = file_name
@@ -442,7 +464,7 @@ def get_full_employee(employee_id: int, db: Session = Depends(get_db)):
 # DOWNLOAD EMPLOYEE DOCUMENTS AS ZIP
 # =====================================================
 @app.get("/download-employee/{employee_id}")
-def download_employee(employee_id: int, db: Session = Depends(get_db)):
+async def download_employee(employee_id: int, db: Session = Depends(get_db)):
 
     employee = db.query(models.EmployeeJoining).filter(
         models.EmployeeJoining.id == employee_id
@@ -473,21 +495,24 @@ def download_employee(employee_id: int, db: Session = Depends(get_db)):
     files_added = 0
 
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
-
         for field in file_fields:
-            file_name = getattr(employee, field, None)
+            file_url = getattr(employee, field, None)
 
-            if file_name:
-                file_path = os.path.join(UPLOAD_FOLDER, file_name)
+            if file_url:
+                try:
+                    # Download file from URL
+                    async with httpx.AsyncClient() as client:
+                        response = await client.get(file_url)
 
-                # Debug print (important)
-                print("Checking:", file_path)
-
-                if os.path.exists(file_path):
-                    zipf.write(file_path, arcname=file_name)
-                    files_added += 1
-                else:
-                    print("File NOT found:", file_path)
+                    if response.status_code == 200:
+                        # Extract filename from URL or use field name
+                        filename = file_url.split('/')[-1] or f"{field}.pdf"
+                        zipf.writestr(filename, response.content)
+                        files_added += 1
+                    else:
+                        print(f"Failed to download {file_url}: {response.status_code}")
+                except Exception as e:
+                    print(f"Error downloading {file_url}: {e}")
 
     if files_added == 0:
         raise HTTPException(status_code=400, detail="No documents found for this employee")
