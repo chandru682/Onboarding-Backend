@@ -55,8 +55,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=allow_credentials,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
+    max_age=3600,  # Cache preflight for 1 hour
 )
 
 models.Base.metadata.create_all(bind=engine)
@@ -135,6 +136,10 @@ async def save_file(file: UploadFile):
 # =====================================================
 # EMPLOYEE SUBMISSION
 # =====================================================
+
+@app.options("/employee-joining")
+async def options_employee_joining():
+    return {"message": "OK"}
 
 @app.post("/employee-joining")
 async def employee_joining(
@@ -835,6 +840,10 @@ def set_password(data: dict = Body(...), db: Session = Depends(get_db)):
     db.commit()
 
     return {"success": True}
+
+@app.options("/employee-login")
+async def options_employee_login():
+    return {"message": "OK"}
 
 @app.post("/employee-login")
 def employee_login(data: dict = Body(...), db: Session = Depends(get_db)):
