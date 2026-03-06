@@ -758,21 +758,27 @@ def download_employee_excel(employee_id: int, db: Session = Depends(get_db)):
     
 @app.post("/send-otp")
 async def send_otp(data: dict = Body(...), db: Session = Depends(get_db)):
+
     email = data.get("email")
 
     if not email:
         return {"success": False, "message": "Email required"}
 
-    # Check if already registered
+    # find employee first
+    employee = db.query(models.EmployeeJoining).filter(
+        models.EmployeeJoining.email == email
+    ).first()
+
+    if not employee:
+        return {"success": False, "message": "Employee not found"}
+
     existing = db.query(models.EmployeeAuth).filter(
         models.EmployeeAuth.email == email
     ).first()
 
-    if existing and existing.password:
-        return {"success": False, "message": "Already registered"}
-
     if not existing:
         existing = models.EmployeeAuth(
+            employee_id=employee.id,   # 🔥 IMPORTANT
             email=email,
             is_verified=False
         )
@@ -784,32 +790,7 @@ async def send_otp(data: dict = Body(...), db: Session = Depends(get_db)):
 
     db.commit()
 
-    print("OTP:", otp)
-
-    # send via Resend HTTP API
-    api_key = os.getenv("RESEND_API_KEY")
-    if api_key:
-        async with httpx.AsyncClient() as client:
-            try:
-                await client.post(
-                    "https://api.resend.com/emails",
-                    json={
-                        "from": os.getenv("MAIL_FROM"),
-                        "to": [email],
-                        "subject": "OTP Verification",
-                        "text": f"Your OTP is {otp}",
-                    },
-                    headers={"Authorization": f"Bearer {api_key}"},
-                    timeout=10,
-                )
-            except Exception as exc:
-                # log but don't fail entire request
-                print("Resend send error", exc)
-    else:
-        print("RESEND_API_KEY not set; skipping email send")
-
     return {"success": True}
-
 @app.post("/verify-otp")
 def verify_otp(data: dict = Body(...), db: Session = Depends(get_db)):
     email = data.get("email")
