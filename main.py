@@ -868,7 +868,7 @@ def employee_login(data: dict = Body(...), db: Session = Depends(get_db)):
             return {"success": False, "message": "Invalid email or password"}
 
         employee = db.query(models.EmployeeJoining).filter(
-            models.EmployeeJoining.id == auth.employee_id
+            models.EmployeeJoining.id == auth.id
         ).first()
 
         if not employee:
