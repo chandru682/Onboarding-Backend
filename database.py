@@ -12,8 +12,10 @@ DATABASE_URL = os.getenv(
     "mysql+pymysql://root:root@localhost/hr_db"
 )
 
-# ensure the URL uses pymysql driver
-if DATABASE_URL.startswith("mysql://") and "+pymysql" not in DATABASE_URL:
+# ensure the URL uses the correct driver
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://")
+elif DATABASE_URL.startswith("mysql://") and "+pymysql" not in DATABASE_URL:
     DATABASE_URL = DATABASE_URL.replace("mysql://", "mysql+pymysql://")
 
 engine = create_engine(DATABASE_URL)

@@ -11,6 +11,7 @@ from fastapi import FastAPI, File, UploadFile, Form, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session , joinedload
+from sqlalchemy.exc import IntegrityError
 from io import BytesIO
 from fastapi.responses import StreamingResponse
 from uuid import uuid4
@@ -35,16 +36,20 @@ pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 app = FastAPI()
 
 # Configure CORS with environment support
-ALLOWED_ORIGINS = os.getenv(
-    "ALLOWED_ORIGINS",
-    "https://workforz.com"
-).split(",")
+# read comma‑separated list and strip whitespace; ignore empty entries
+origin_env = os.getenv("ALLOWED_ORIGINS", "https://workforz.com")
+ALLOWED_ORIGINS = [o.strip() for o in origin_env.split(",") if o.strip()]
+# if the variable was set but happened to be empty, fall back to wildcard
+if not ALLOWED_ORIGINS:
+    ALLOWED_ORIGINS = ["*"]
+
+# debug info in logs
+print("CORS allowed origins:", ALLOWED_ORIGINS)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,                                              
-    allow_methods=["*"],
+    allow_credentials=True,
     allow_headers=["*"],
 )
 
@@ -62,45 +67,6 @@ conf = ConnectionConfig(
     MAIL_SSL_TLS=False,
     USE_CREDENTIALS=True
 )
-
-
-# =====================================================
-# UPLOAD FOLDER SETUP
-# =====================================================
-
-UPLOAD_FOLDER = "uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-
-
-# =====================================================
-# DATABASE SESSION
-# =====================================================
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-# =====================================================
-# FILE SAVE FUNCTION
-# =====================================================
-
-def save_file(file: UploadFile):
-    if not file:
-        return None
-
-    file_path = os.path.join(UPLOAD_FOLDER, file.filename)
-
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    return file.filename
-
-
 
 
 # =====================================================
@@ -443,11 +409,31 @@ def get_full_employee(employee_id: int, db: Session = Depends(get_db)):
     for dep in employee.dependents
     ]
 
+    # Convert datetime objects to ISO format strings for JSON serialization
+    for key, value in employee_data.items():
+        if hasattr(value, 'isoformat'):
+            employee_data[key] = value.isoformat()
+    
+    for training in trainings_data:
+        for key, value in training.items():
+            if hasattr(value, 'isoformat'):
+                training[key] = value.isoformat()
+    
+    for employment in employments_data:
+        for key, value in employment.items():
+            if hasattr(value, 'isoformat'):
+                employment[key] = value.isoformat()
+    
+    for dependent in dependents_data:
+        for key, value in dependent.items():
+            if hasattr(value, 'isoformat'):
+                dependent[key] = value.isoformat()
+    
     return {
         "employee": employee_data,
         "trainings": trainings_data,
         "employments": employments_data,
-        "dependents":dependents_data
+        "dependents": dependents_data
     }
 
 

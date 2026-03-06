@@ -21,19 +21,6 @@ class EmployeeAuth(Base):
     password = Column(String(255))
 
     employee = relationship("EmployeeJoining")
-    __tablename__ = "employee_auth"
-
-    id = Column(Integer, primary_key=True)
-    
-    employee_id = Column(Integer, ForeignKey("employee_joining.id"), unique=True)
-    
-    email = Column(String(100), unique=True)
-    otp = Column(String(6))
-    otp_expiry = Column(DateTime)
-    is_verified = Column(Boolean, default=False)
-    password = Column(String(255))
-
-    employee = relationship("EmployeeJoining")
 
 class EmployeeJoining(Base):
     __tablename__ = "employee_joining"
