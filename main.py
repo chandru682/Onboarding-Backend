@@ -43,13 +43,17 @@ ALLOWED_ORIGINS = [o.strip() for o in origin_env.split(",") if o.strip()]
 if not ALLOWED_ORIGINS:
     ALLOWED_ORIGINS = ["*"]
 
+# Configure CORS - cannot use allow_credentials=True with allow_origins=["*"]
+allow_credentials = ALLOWED_ORIGINS != ["*"]
+
 # debug info in logs
 print("CORS allowed origins:", ALLOWED_ORIGINS)
+print("CORS allow credentials:", allow_credentials)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
