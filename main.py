@@ -839,6 +839,7 @@ def set_password(data: dict = Body(...), db: Session = Depends(get_db)):
 
 @app.post("/employee-login")
 def employee_login(data: dict = Body(...), db: Session = Depends(get_db)):
+
     email = data.get("email")
     password = data.get("password")
 
@@ -847,17 +848,20 @@ def employee_login(data: dict = Body(...), db: Session = Depends(get_db)):
     ).first()
 
     if not auth:
-        return {"success": False}
+        return {"success": False, "message": "Invalid email or password"}
+
+    if not auth.password:
+        return {"success": False, "message": "Password not set"}
 
     if not pwd_context.verify(password, auth.password):
-        return {"success": False}
+        return {"success": False, "message": "Invalid email or password"}
 
     employee = db.query(models.EmployeeJoining).filter(
         models.EmployeeJoining.id == auth.employee_id
     ).first()
 
     if not employee:
-        return {"success": False}
+        return {"success": False, "message": "Employee record not found"}
 
     return {
         "success": True,
@@ -866,9 +870,7 @@ def employee_login(data: dict = Body(...), db: Session = Depends(get_db)):
             "name": employee.name,
             "email": employee.email
         }
-    }
-    
-    
+    } 
 @app.delete("/delete-employee/{employee_id}")
 def delete_employee(employee_id: int, db: Session = Depends(get_db)):
 
