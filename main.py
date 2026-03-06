@@ -378,17 +378,22 @@ async def employee_joining(
     db.commit()
 
     # Create auth record with default password (employee code)
-    default_password = employeeCode if employeeCode else str(employee.id)
-    hashed_password = pwd_context.hash(default_password)
-    
-    employee_auth = models.EmployeeAuth(
-        employee_id=employee.id,
-        email=email,
-        password=hashed_password,
-        is_verified=True  # Auto-verify for now
-    )
-    db.add(employee_auth)
-    db.commit()
+    try:
+        default_password = employeeCode if employeeCode else str(employee.id)
+        hashed_password = pwd_context.hash(default_password)
+        
+        employee_auth = models.EmployeeAuth(
+            employee_id=employee.id,
+            email=email,
+            password=hashed_password,
+            is_verified=True  # Auto-verify for now
+        )
+        db.add(employee_auth)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        # Auth record might already exist, continue without error
+        print(f"Auth record already exists for employee {employee.id}")
 
     return {"message": "Employee saved successfully", "employee_id": employee.id}
 # GET ALL EMPLOYEES (HR DASHBOARD)
