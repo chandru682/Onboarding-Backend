@@ -856,6 +856,9 @@ def employee_login(data: dict = Body(...), db: Session = Depends(get_db)):
         models.EmployeeJoining.id == auth.employee_id
     ).first()
 
+    if not employee:
+        return {"success": False}
+
     return {
         "success": True,
         "employee": {
