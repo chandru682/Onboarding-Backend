@@ -498,46 +498,6 @@ def download_employee(employee_id: int, db: Session = Depends(get_db)):
         media_type="application/zip"
     )
 
-    employee = db.query(models.EmployeeJoining).filter(
-        models.EmployeeJoining.id == employee_id
-    ).first()
-
-    if not employee:
-        raise HTTPException(status_code=404, detail="Employee not found")
-
-    zip_filename = f"employee_{employee_id}.zip"
-    zip_path = os.path.join(UPLOAD_FOLDER, zip_filename)
-
-    # 🔹 List ONLY file fields
-    file_fields = [
-        "resume",
-        "sslc",
-        "hsc",
-        "graduation",
-        "post_graduation",
-        "aadhar",
-        "pan",
-        "photo",
-        "bank_passbook"
-    ]
-
-    with zipfile.ZipFile(zip_path, "w") as zipf:
-
-        for field in file_fields:
-            file_name = getattr(employee, field)
-
-            if file_name:
-                file_path = os.path.join(UPLOAD_FOLDER, file_name)
-
-                if os.path.exists(file_path):
-                    zipf.write(file_path, arcname=file_name)
-
-    return FileResponse(
-        zip_path,
-        filename=zip_filename,
-        media_type="application/zip"
-    )
-
 @app.get("/download-employee-excel/{employee_id}")
 def download_employee_excel(employee_id: int, db: Session = Depends(get_db)):
 
