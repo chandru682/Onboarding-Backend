@@ -766,6 +766,10 @@ def download_employee_excel(employee_id: int, db: Session = Depends(get_db)):
         },
     )
     
+@app.options("/send-otp")
+async def options_send_otp():
+    return {"message": "OK"}
+
 @app.post("/send-otp")
 async def send_otp(data: dict = Body(...), db: Session = Depends(get_db)):
 
@@ -801,6 +805,10 @@ async def send_otp(data: dict = Body(...), db: Session = Depends(get_db)):
     db.commit()
 
     return {"success": True}
+@app.options("/verify-otp")
+async def options_verify_otp():
+    return {"message": "OK"}
+
 @app.post("/verify-otp")
 def verify_otp(data: dict = Body(...), db: Session = Depends(get_db)):
     email = data.get("email")
@@ -823,6 +831,10 @@ def verify_otp(data: dict = Body(...), db: Session = Depends(get_db)):
     db.commit()
 
     return {"success": True}
+@app.options("/set-password")
+async def options_set_password():
+    return {"message": "OK"}
+
 @app.post("/set-password")
 def set_password(data: dict = Body(...), db: Session = Depends(get_db)):
     email = data.get("email")
