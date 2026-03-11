@@ -776,35 +776,35 @@ async def send_otp(data: dict = Body(...), db: Session = Depends(get_db)):
     email = data.get("email")
 
     if not email:
-        return {"success": False, "message": "Email required"}
+        raise HTTPException(status_code=400, detail="Email required")
 
-    # find employee first
     employee = db.query(models.EmployeeJoining).filter(
         models.EmployeeJoining.email == email
     ).first()
 
     if not employee:
-        return {"success": False, "message": "Employee not found"}
+        raise HTTPException(status_code=404, detail="Employee not found")
 
-    existing = db.query(models.EmployeeAuth).filter(
+    auth = db.query(models.EmployeeAuth).filter(
         models.EmployeeAuth.email == email
     ).first()
 
-    if not existing:
-        existing = models.EmployeeAuth(
-            employee_id=employee.id,   # 🔥 IMPORTANT
-            email=email,
-            is_verified=False
+    if not auth:
+        auth = models.EmployeeAuth(
+            employee_id=employee.id,
+            email=email
         )
-        db.add(existing)
+        db.add(auth)
 
     otp = str(random.randint(100000, 999999))
-    existing.otp = otp
-    existing.otp_expiry = datetime.utcnow() + timedelta(minutes=5)
+
+    auth.otp = otp
+    auth.otp_expiry = datetime.utcnow() + timedelta(minutes=5)
 
     db.commit()
 
-    return {"success": True}
+    return {"success": True, "otp": otp}
+
 @app.options("/verify-otp")
 async def options_verify_otp():
     return {"message": "OK"}
