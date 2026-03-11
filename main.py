@@ -766,9 +766,7 @@ def download_employee_excel(employee_id: int, db: Session = Depends(get_db)):
         },
     )
     
-@app.options("/send-otp")
-async def options_send_otp():
-    return {"message": "OK"}
+
 
 @app.post("/send-otp")
 async def send_otp(data: dict = Body(...), db: Session = Depends(get_db)):
@@ -805,9 +803,7 @@ async def send_otp(data: dict = Body(...), db: Session = Depends(get_db)):
 
     return {"success": True, "otp": otp}
 
-@app.options("/verify-otp")
-async def options_verify_otp():
-    return {"message": "OK"}
+
 
 @app.post("/verify-otp")
 def verify_otp(data: dict = Body(...), db: Session = Depends(get_db)):
@@ -831,9 +827,7 @@ def verify_otp(data: dict = Body(...), db: Session = Depends(get_db)):
     db.commit()
 
     return {"success": True}
-@app.options("/set-password")
-async def options_set_password():
-    return {"message": "OK"}
+
 
 @app.post("/set-password")
 def set_password(data: dict = Body(...), db: Session = Depends(get_db)):
@@ -853,9 +847,6 @@ def set_password(data: dict = Body(...), db: Session = Depends(get_db)):
 
     return {"success": True}
 
-@app.options("/employee-login")
-async def options_employee_login():
-    return {"message": "OK"}
 
 @app.post("/employee-login")
 def employee_login(data: dict = Body(...), db: Session = Depends(get_db)):
